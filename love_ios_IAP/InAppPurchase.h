@@ -14,7 +14,7 @@
 
 @interface IAPResponder : UIResponder <SKProductsRequestDelegate, SKPaymentTransactionObserver>
 
-- (void)restorePurchases;
+  - (void)restorePurchases;
 - (IBAction)makePurchase:(NSString*) productIdentifier;
 - (BOOL)queryPurchase:(NSString*) productIdentifier;
 

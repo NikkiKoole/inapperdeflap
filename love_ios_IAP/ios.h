@@ -29,66 +29,66 @@
 
 namespace love
 {
-	namespace ios
-	{
+  namespace ios
+  {
 		
-		/**
-		 * Gets the filepath of the first detected love file. The main .app Bundle is
-		 * searched first, and then the app's Documents folder.
-		 **/
-		std::string getLoveInResources(bool &fused);
+    /**
+     * Gets the filepath of the first detected love file. The main .app Bundle is
+     * searched first, and then the app's Documents folder.
+     **/
+    std::string getLoveInResources(bool &fused);
 		
-		/**
-		 * Gets the directory path where files should be stored.
-		 **/
-		std::string getAppdataDirectory();
+    /**
+     * Gets the directory path where files should be stored.
+     **/
+    std::string getAppdataDirectory();
 		
-		/**
-		 * Get the home directory (on iOS, this really means the app's sandbox dir.)
-		 **/
-		std::string getHomeDirectory();
+    /**
+     * Get the home directory (on iOS, this really means the app's sandbox dir.)
+     **/
+    std::string getHomeDirectory();
 		
-		/**
-		 * Opens the specified URL with the default program associated with the URL's
-		 * scheme.
-		 **/
-		bool openURL(const std::string &url);
+    /**
+     * Opens the specified URL with the default program associated with the URL's
+     * scheme.
+     **/
+    bool openURL(const std::string &url);
 		
-		/**
-		 * Returns the full path to the executable.
-		 **/
-		std::string getExecutablePath();
+    /**
+     * Returns the full path to the executable.
+     **/
+    std::string getExecutablePath();
 		
-		/**
-		 * Causes devices with vibration support to vibrate for about 0.5 seconds.
-		 **/
-		void vibrate();
+    /**
+     * Causes devices with vibration support to vibrate for about 0.5 seconds.
+     **/
+    void vibrate();
 		
-		/**
-		 * Set the audio session so music isn't interrupted.
-		 **/
-		void setUpAudioSession();
+    /**
+     * Set the audio session so music isn't interrupted.
+     **/
+    void setUpAudioSession();
 		
-		/**
-		 * Restore the user's purchases.
-		 */
-		void restorePurchases();
+    /**
+     * Restore the user's purchases.
+     */
+    void restorePurchases();
 		
-		/**
-		 * Query whether or not a user has a given purchase.
-		 **/
-		bool hasPurchase(const std::string &productIdentifier);
+    /**
+     * Query whether or not a user has a given purchase.
+     **/
+    bool hasPurchase(const std::string &productIdentifier);
 		
-		/**
-		 * Refresh the purchase status of things.
-		 **/
+    /**
+     * Refresh the purchase status of things.
+     **/
 		
-		/**
-		 * Initiate a menu to make a purchase.
-		 **/
-		void makePurchase(const std::string &productIdentifier);
+    /**
+     * Initiate a menu to make a purchase.
+     **/
+    void makePurchase(const std::string &productIdentifier);
 		
-	} // ios
+  } // ios
 } // love
 
 #endif // LOVE_IOS
