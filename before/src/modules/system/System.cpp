@@ -26,46 +26,65 @@
 #include <CoreServices/CoreServices.h>
 #elif defined(LOVE_IOS)
 #include "common/ios.h"
-#elif defined(LOVE_ANDROID)
-#include "common/android.h"
-#elif defined(LOVE_LINUX)
-#include <spawn.h>
-//#include <stdlib.h>
-//#include <unistd.h>
+#elif defined(LOVE_LINUX) || defined(LOVE_ANDROID)
 #include <signal.h>
 #include <sys/wait.h>
+#include <errno.h>
 #elif defined(LOVE_WINDOWS)
 #include "common/utf8.h"
 #include <shlobj.h>
 #include <shellapi.h>
 #pragma comment(lib, "shell32.lib")
 #endif
+#if defined(LOVE_ANDROID)
+#include "common/android.h"
+#elif defined(LOVE_LINUX)
+#include <spawn.h>
+#endif
+
+#if defined(LOVE_LINUX)
+static void sigchld_handler(int sig)
+{
+  // Because waitpid can set errno, we need to save it.
+  auto old = errno;
+	
+  // Reap whilst there are children waiting to be reaped.
+  while (waitpid(-1, nullptr, WNOHANG) > 0)
+    ;
+	
+  errno = old;
+}
+#endif
 
 namespace love
 {
   namespace system
   {
-
+		
     System::System()
     {
 #if defined(LOVE_LINUX)
       // Enable automatic cleanup of zombie processes
+      // NOTE: We're using our own handler, instead of SA_NOCLDWAIT because the
+      // latter breaks wait, and thus os.execute.
+      // NOTE: This isn't perfect, due to multithreading our SIGCHLD can happen
+      // on a different thread than the one calling wait(), thus causing a race.
       struct sigaction act = {0};
       sigemptyset(&act.sa_mask);
-      act.sa_handler = SIG_DFL;
-      act.sa_flags = SA_NOCLDWAIT;
-
-      // Requires linux 2.6 or higher, so anything remotely modern
+      act.sa_handler = sigchld_handler;
+      act.sa_flags = SA_RESTART;
       sigaction(SIGCHLD, &act, nullptr);
 #endif
     }
-
+		
     std::string System::getOS() const
     {
 #if defined(LOVE_MACOSX)
       return "OS X";
 #elif defined(LOVE_IOS)
       return "iOS";
+#elif defined(LOVE_WINDOWS_UWP)
+      return "UWP";
 #elif defined(LOVE_WINDOWS)
       return "Windows";
 #elif defined(LOVE_ANDROID)
@@ -76,46 +95,46 @@ namespace love
       return "Unknown";
 #endif
     }
-
+		
     extern "C"
     {
       extern char **environ; // The environment, always available
     }
-
+		
     bool System::openURL(const std::string &url) const
     {
-
+			
 #if defined(LOVE_MACOSX)
-
+			
       bool success = false;
       CFURLRef cfurl = CFURLCreateWithBytes(nullptr,
 					    (const UInt8 *) url.c_str(),
 					    url.length(),
 					    kCFStringEncodingUTF8,
 					    nullptr);
-
+			
       success = LSOpenCFURLRef(cfurl, nullptr) == noErr;
       CFRelease(cfurl);
       return success;
-
+			
 #elif defined(LOVE_IOS)
-
+			
       return love::ios::openURL(url);
-
+			
 #elif defined(LOVE_ANDROID)
-
+			
       return love::android::openURL(url);
-
+			
 #elif defined(LOVE_LINUX)
-
+			
       pid_t pid;
       const char *argv[] = {"xdg-open", url.c_str(), nullptr};
-
+			
       // Note: at the moment this process inherits our file descriptors.
       // Note: the below const_cast is really ugly as well.
       if (posix_spawnp(&pid, "xdg-open", nullptr, nullptr, const_cast<char **>(argv), environ) != 0)
 	return false;
-
+			
       // Check if xdg-open already completed (or failed.)
       int status = 0;
       if (waitpid(pid, &status, WNOHANG) > 0)
@@ -124,24 +143,36 @@ namespace love
 	// We can't tell what actually happens without waiting for
 	// the process to finish, which could take forever (literally).
 	return true;
-
+			
 #elif defined(LOVE_WINDOWS)
-
+			
       // Unicode-aware WinAPI functions don't accept UTF-8, so we need to convert.
       std::wstring wurl = to_widestr(url);
-
-      HINSTANCE result = ShellExecuteW(nullptr,
-				       L"open",
-				       wurl.c_str(),
-				       nullptr,
-				       nullptr,
-				       SW_SHOW);
-
+			
+      HINSTANCE result = 0;
+			
+#if defined(LOVE_WINDOWS_UWP)
+			
+      Platform::String^ urlString = ref new Platform::String(wurl.c_str());
+      auto uwpUri = ref new Windows::Foundation::Uri(urlString);
+      Windows::System::Launcher::LaunchUriAsync(uwpUri);
+			
+#else
+			
+      result = ShellExecuteW(nullptr,
+			     L"open",
+			     wurl.c_str(),
+			     nullptr,
+			     nullptr,
+			     SW_SHOW);
+			
+#endif
+			
       return (int) result > 32;
-
+			
 #endif
     }
-
+		
     void System::vibrate(double seconds) const
     {
 #ifdef LOVE_ANDROID
@@ -152,17 +183,42 @@ namespace love
       LOVE_UNUSED(seconds);
 #endif
     }
-
+		
+    void System::restorePurchases() const
+    {
+#if defined(LOVE_IOS)
+      love::ios::restorePurchases();
+#else
+      return;
+#endif
+    }
+		
+    bool System::hasPurchase(const std::string &productIdentifier) const
+    {
+#if defined(LOVE_IOS)
+      return love::ios::hasPurchase(productIdentifier);
+#else
+      return false;
+#endif
+    }
+		
+    void System::makePurchase(const std::string &productIdentifier) const
+    {
+#if defined(LOVE_IOS)
+      love::ios::makePurchase(productIdentifier);
+#endif
+    }
+		
     bool System::getConstant(const char *in, System::PowerState &out)
     {
       return powerStates.find(in, out);
     }
-
+		
     bool System::getConstant(System::PowerState in, const char *&out)
     {
       return powerStates.find(in, out);
     }
-
+		
     StringMap<System::PowerState, System::POWER_MAX_ENUM>::Entry System::powerEntries[] =
       {
 	{"unknown", System::POWER_UNKNOWN},
@@ -171,8 +227,8 @@ namespace love
 	{"charging", System::POWER_CHARGING},
 	{"charged", System::POWER_CHARGED},
       };
-
+		
     StringMap<System::PowerState, System::POWER_MAX_ENUM> System::powerStates(System::powerEntries, sizeof(System::powerEntries));
-
+		
   } // system
 } // love

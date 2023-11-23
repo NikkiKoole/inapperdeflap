@@ -33,11 +33,11 @@ namespace love
 {
   namespace system
   {
-
+		
     class System : public Module
     {
     public:
-
+			
       enum PowerState
 	{
 	  POWER_UNKNOWN,
@@ -47,36 +47,36 @@ namespace love
 	  POWER_CHARGED,
 	  POWER_MAX_ENUM
 	};
-
+			
       System();
       virtual ~System() {}
-
+			
       // Implements Module.
       virtual ModuleType getModuleType() const { return M_SYSTEM; }
-
+			
       /**
        * Gets the current operating system.
        **/
       std::string getOS() const;
-
+			
       /**
        * Gets the number of reported CPU cores on the current system.
        * Does not account for technologies such as Hyperthreading: a 4-core
        * Hyperthreading-enabled Intel CPU will report 8, instead of 4.
        **/
       virtual int getProcessorCount() const = 0;
-
+			
       /**
        * Replaces the contents of the system's text clipboard with a string.
        * @param text The clipboard text to set.
        **/
       virtual void setClipboardText(const std::string &text) const = 0;
-
+			
       /**
        * Gets the contents of the system's text clipboard.
        **/
       virtual std::string getClipboardText() const = 0;
-
+			
       /**
        * Gets information about the system's power supply.
        *
@@ -88,7 +88,7 @@ namespace love
        * @return The current state of the battery.
        **/
       virtual PowerState getPowerInfo(int &seconds, int &percent) const = 0;
-
+			
       /**
        * Opens the specified URL with the user's default program to handle that
        * particular URL type.
@@ -98,24 +98,43 @@ namespace love
        * @return Whether the URL was opened successfully.
        **/
       virtual bool openURL(const std::string &url) const;
-
+			
       /**
        * Vibrates for the specified amount of seconds.
        *
        * @param number of seconds to vibrate.
        */
       virtual void vibrate(double seconds) const;
-
+			
+      /**
+       * Restores the purchases stored in local memory.
+       */
+      virtual void restorePurchases() const;
+			
+      /**
+       * Returns whether or not the user has purchased the specified product.
+       *
+       * @param The product identifier of the purchase.
+       */
+      virtual bool hasPurchase(const std::string &productIdentifier) const;
+			
+      /**
+       * Initiates a menu to make a purchase.
+       *
+       * @param The product identifier of the purchase.
+       */
+      virtual void makePurchase(const std::string &productIdentifier) const;
+			
       static bool getConstant(const char *in, PowerState &out);
       static bool getConstant(PowerState in, const char *&out);
-
+			
     private:
-
+			
       static StringMap<PowerState, POWER_MAX_ENUM>::Entry powerEntries[];
       static StringMap<PowerState, POWER_MAX_ENUM> powerStates;
-
+			
     }; // System
-
+		
   } // system
 } // love
 

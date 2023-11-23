@@ -26,73 +26,94 @@ namespace love
 {
   namespace system
   {
-
+		
 #define instance() (Module::getInstance<System>(Module::M_SYSTEM))
-
+		
     int w_getOS(lua_State *L)
     {
       luax_pushstring(L, instance()->getOS());
       return 1;
     }
-
+		
     int w_getProcessorCount(lua_State *L)
     {
       lua_pushinteger(L, instance()->getProcessorCount());
       return 1;
     }
-
+		
     int w_setClipboardText(lua_State *L)
     {
       const char *text = luaL_checkstring(L, 1);
       instance()->setClipboardText(text);
       return 0;
     }
-
+		
     int w_getClipboardText(lua_State *L)
     {
       luax_pushstring(L, instance()->getClipboardText());
       return 1;
     }
-
+		
     int w_getPowerInfo(lua_State *L)
     {
       int seconds = -1, percent = -1;
       const char *str;
-
+			
       System::PowerState state = instance()->getPowerInfo(seconds, percent);
-
+			
       if (!System::getConstant(state, str))
 	str = "unknown";
-
+			
       lua_pushstring(L, str);
-
+			
       if (percent >= 0)
 	lua_pushinteger(L, percent);
       else
 	lua_pushnil(L);
-
+			
       if (seconds >= 0)
 	lua_pushinteger(L, seconds);
       else
 	lua_pushnil(L);
-
+			
       return 3;
     }
-
+		
     int w_openURL(lua_State *L)
     {
       std::string url = luax_checkstring(L, 1);
       luax_pushboolean(L, instance()->openURL(url));
       return 1;
     }
-
+		
     int w_vibrate(lua_State *L)
     {
       double seconds = luaL_optnumber(L, 1, 0.5);
       instance()->vibrate(seconds);
       return 0;
     }
-
+		
+    int w_restorePurchases(lua_State *L)
+    {
+#pragma unused(L)
+      instance()->restorePurchases();
+      return 0;
+    }
+		
+    int w_hasPurchase(lua_State *L)
+    {
+      std::string productIdentifier = luax_checkstring(L, 1);
+      luax_pushboolean(L, instance()->hasPurchase(productIdentifier));
+      return 1;
+    }
+		
+    int w_makePurchase(lua_State *L)
+    {
+      std::string productIdentifier = luax_checkstring(L, 1);
+      instance()->makePurchase(productIdentifier);
+      return 0;
+    }
+		
     static const luaL_Reg functions[] =
       {
 	{ "getOS", w_getOS },
@@ -102,9 +123,12 @@ namespace love
 	{ "getPowerInfo", w_getPowerInfo },
 	{ "openURL", w_openURL },
 	{ "vibrate", w_vibrate },
+	{ "restorePurchases", w_restorePurchases },
+	{ "hasPurchase", w_hasPurchase },
+	{ "makePurchase", w_makePurchase },
 	{ 0, 0 }
       };
-
+		
     extern "C" int luaopen_love_system(lua_State *L)
     {
       System *instance = instance();
@@ -114,16 +138,16 @@ namespace love
 	}
       else
 	instance->retain();
-
+			
       WrappedModule w;
       w.module = instance;
       w.name = "system";
       w.type = MODULE_ID;
       w.functions = functions;
       w.types = nullptr;
-
+			
       return luax_register_module(L, w);
     }
-
+		
   } // system
 } // love
